@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YouTube Viewer</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center; /* Centrer le conteneur */
+      align-items: center; /* Centrer le conteneur */
+      margin: 0;
+      height: 100vh;
+      overflow: hidden;
+      background: transparent;
+    }
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 90%;
+      height: 95%;
+      background: rgb(131,15,228);
+      background: linear-gradient(90deg, rgba(131,15,228,0.8225884103641457) 0%, rgba(59,15,228,0.7805716036414566) 56%, rgba(70,11,238,1) 100%, rgba(0,119,255,0.7609637605042017) 100%);
+      background-size: cover;
+      border-radius: 20px; /* Ajuster l'arrondi ici */
+      padding: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); /* Ajouter une ombre pour un effet visuel agréable */
+    }
+    .input-container {
+      display: flex;
+      justify-content: center;
+      width: 80%;
+      margin-top: 20px;
+    }
+    #video-url, #dir-path {
+      flex: 1;
+      padding: 10px;
+      font-size: 16px;
+    }
+    #video-container {
+      margin-top: 20px;
+      width: 80%;
+      background: rgba(255, 255, 255, 0.85); /* Fond semi-transparent pour la vidéo */
+      padding: 10px; /* Espace autour de la vidéo */
+      border-radius: 10px; /* Coins arrondis */
+      display: none;
+    }
+    iframe {
+      width: 100%;
+      height: 450px;
+      border: none; /* Enlever la bordure de l'iframe */
+    }
+    .title-bar {
+      display: flex;
+      align-items: center; /* Pour centrer verticalement */
+      height: 30px; /* Hauteur de la barre de titre */
+      width: 100%;
+      background: rgba(51, 51, 51, 0.85); /* Fond semi-transparent */
+      color: #fff;
+      -webkit-app-region: drag;
+      border-radius: 10px; /* Coins arrondis pour la barre de titre */
+    }
+    .title {
+      margin: 0;
+      flex-grow: 1; /* Pour occuper l'espace restant */
+      text-align: center; /* Pour centrer le texte horizontalement */
+      -webkit-app-region: drag;
+    }
+    .title-bar button {
+      background: none;
+      border: none;
+      color: #fff;
+      padding: 0 5px;
+      margin: 5px;
+      border: none;
+      border-radius: 25%;
+      font-size: 20px;
+      cursor: pointer;
+      -webkit-app-region: no-drag;
+      margin-left: auto; /* Pour placer le bouton à droite */
+    }
+    .title-bar button:hover {
+      background: rgba(85, 85, 85, 0.85); /* Fond semi-transparent */
+    }
+    a.buttons {
+        background: linear-gradient(to right, #830fe4, #6433E0);
+        background-color: #830fe4;
+        color: #fff;
+        font-family: Trebuchet MS;
+        font-size: 18px;
+        font-weight: 800;
+        font-style: normal;
+        text-decoration: none;
+        padding: 14px 15px;
+        border: 0px solid #000;
+        border-radius: 10px;
+        display: inline-flex; /* Utiliser inline-flex pour aligner l'image et le texte */
+        align-items: center; /* Aligner verticalement les éléments */
+    }
+    a.buttons:hover {
+      background: linear-gradient(to right, #9452e7, #7d5ee3);
+      background-color: #9452e7;
+    }
+    a.buttons:active {
+      transform: scale(0.95);
+    }
+    .button-icon {
+      width: 25px; /* Ajuster la largeur de l'icône selon vos besoins */
+      height: 25px; /* Ajuster la hauteur de l'icône selon vos besoins */
+  }
+    #dir-path {
+      display: none;
+    }
+    #download-button {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="title-bar">
+      <h2 class="title">YouTube Downloader</h2>
+      <button id="close-button">&times;</button>
+    </div>
+    <div class="input-container">
+      <input type="text" id="video-url" placeholder="Enter YouTube URL">
+      <a id="watch-button" class="buttons">Watch</a>
+    </div>
+    <div id="video-container"></div>
+    <div class="input-container">
+      <input type="text" id="dir-path" placeholder="Enter Path">
+      <a id="select-path-button" class="buttons"><img src="./images/open-file.png" alt="Select path" class="button-icon"></a>
+      <a id="download-button" class="buttons">Download</a>
+    </div>  
+  </div>
+
+  <script>
+    const { closeApp, ipcRenderer } = window.electron;
+
+    document.getElementById('close-button').addEventListener('click', () => {
+        closeApp();
+    });
+
+    document.getElementById('select-path-button').addEventListener('click', () => {
+      electron.selectDirectory();
+    });
+
+    window.electron.receiveSelectedDirectory((directory) => {
+        document.getElementById('dir-path').value = directory;
+    });
+
+    document.getElementById('watch-button').addEventListener('click', () => {
+        const url = document.getElementById('video-url').value;
+        const videoId = new URL(url).searchParams.get("v");
+        document.getElementById('dir-path').style.display = 'flex';
+        document.getElementById('download-button').style.display = 'flex';
+        if (videoId) {
+            const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+            document.getElementById('video-container').innerHTML = `<iframe src="${embedUrl}" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
+            document.getElementById('video-container').style.display = 'block'; // Affiche le conteneur vidéo
+            electron.resizeApp();
+        } else {
+            alert('Invalid YouTube URL');
+        }
+    });
+
+    document.getElementById('download-button').addEventListener('click', () => {
+        const videoUrl = document.getElementById('video-url').value;
+        const path = document.getElementById('dir-path').value;
+        electron.downloadComponent(videoUrl, path);
+        console.log('Téléchargement en cours pour l\'URL :', videoUrl);
+    });
+</script>
+
+</body>
+</html>
